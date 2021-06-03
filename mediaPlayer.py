@@ -1,30 +1,15 @@
+from os import write
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QFileDialog, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QListWidget, QHBoxLayout,QListWidgetItem
-
-from PyQt5.QtGui import QImage, QIcon
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtGui import QImage
 from PyQt5.QtCore import *
 import cv2
 import time
+import numpy as np
 
-
-class MouseTracker(QtCore.QObject):
-    positionChanged = QtCore.pyqtSignal(QtCore.QPoint)
-
-    def __init__(self, widget):
-        super().__init__(widget)
-        self._widget = widget
-        self.widget.setMouseTracking(True)
-        self.widget.installEventFilter(self)
-
-    @property
-    def widget(self):
-        return self._widget
-
-    def eventFilter(self, o, e):
-        if o is self.widget and e.type() == QtCore.QEvent.MouseMove:
-            self.positionChanged.emit(e.pos())
-        return super().eventFilter(o, e)
-
+from mouseTracker import MouseTracker
+from draggableLabel import draggableLabel
+from myButton import myButton
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -34,27 +19,51 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(rect.width(), rect.height())
         self.setMinimumSize(QtCore.QSize(640, 500))
 
+        self.visibilityButton = False
+
+        self.nameMarker = ["corner_left", "corner_right", "mind_left", "mind_right",
+         "area_goal_line_left", "area_goal_line_right","area_line_left", "area_line_right",
+         "box_goal_line_left", "box_goal_line_right", "box_line_left", "box_line_right"]
+
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setAutoFillBackground(False)
         self.centralwidget.setObjectName("centralwidget")
 
         self.video_label = QtWidgets.QLabel(self.centralwidget)
         self.video_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
-        #self.video_label.setMinimumSize(QtCore.QSize(640, 480))
         self.video_label.setStyleSheet("background-color: darkgray")
-        self.video_label.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
-        self.video_label.setScaledContents(True)
         self.video_label.setObjectName("video_label")
 
-        self.drag_label1 = QtWidgets.QLabel(self.centralwidget)
-        self.drag_label1.setGeometry(QtCore.QRect(100, 50, 30,70))
-        frame = cv2.imread("bandeira.png")
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
-        self.drag_label1.setPixmap(QtGui.QPixmap.fromImage(image))
+        self.marker = []
+        for i in range(0,12):
+            labelm = draggableLabel(self)
+            labelm.move(0,0)
+            labelm.setGeometry(QtCore.QRect(0, 0, 25, 25))
+            labelm.setFrameShape(QtWidgets.QFrame.NoFrame)
+            labelm.setPixmap(QtGui.QPixmap("resources/bandeira.png"))
+            labelm.setScaledContents(True)
+            labelm.setObjectName(self.nameMarker[i])
+            labelm.setVisible(self.visibilityButton)
+            self.marker.append(labelm)
+        
+        self.buttonLayout = QtWidgets.QWidget(self.centralwidget)
+        self.buttonLayout.setGeometry(QtCore.QRect(10, 40, 120, 360))
+        self.buttonLayout.setObjectName("buttonLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.buttonLayout)
+        self.verticalLayout.setContentsMargins(0,0,0,0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.buttonList = []
+        for i in range(0, 12):
+            button = myButton()
+            button.setObjectName("pushButton"+str(i))
+            button.index = i
+            button.setVisible(self.visibilityButton)
+            button.clicked.connect(lambda: self.buttonClicked(i, button))
+            self.verticalLayout.addWidget(button)
+            self.buttonList.append(button)
 
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.layoutWidget.setGeometry(QtCore.QRect(110, rect.height() - 60, 340, 20))
+        self.layoutWidget.setGeometry(QtCore.QRect(110, rect.height() - 80, 340, 20))
         self.layoutWidget.setObjectName("layoutWidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
@@ -71,53 +80,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_4 = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_4.setObjectName("pushButton_4")
         self.horizontalLayout.addWidget(self.pushButton_4)
+        self.check = QtWidgets.QPushButton(self.layoutWidget)
+        self.check.setObjectName("check")
+        self.horizontalLayout.addWidget(self.check)
 
-        self.pushButton_17 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_17.setGeometry(QtCore.QRect(10, 10, 80, 23))
-        self.pushButton_17.setObjectName("pushButton_17")
+        self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_5.setGeometry(QtCore.QRect(10, 10, 80, 23))
+        self.pushButton_5.setObjectName("save")
 
-        self.widget = QtWidgets.QWidget(self.centralwidget)
-        self.widget.setGeometry(QtCore.QRect(10, 40, 41, 344))
-        self.widget.setObjectName("widget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.pushButton_5 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_5.setObjectName("pushButton_5")
-        self.verticalLayout.addWidget(self.pushButton_5)
-        self.pushButton_6 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_6.setObjectName("pushButton_6")
-        self.verticalLayout.addWidget(self.pushButton_6)
-        self.pushButton_8 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_8.setObjectName("pushButton_8")
-        self.verticalLayout.addWidget(self.pushButton_8)
-        self.pushButton_7 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_7.setObjectName("pushButton_7")
-        self.verticalLayout.addWidget(self.pushButton_7)
-        self.pushButton_9 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_9.setObjectName("pushButton_9")
-        self.verticalLayout.addWidget(self.pushButton_9)
-        self.pushButton_11 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_11.setObjectName("pushButton_11")
-        self.verticalLayout.addWidget(self.pushButton_11)
-        self.pushButton_10 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_10.setObjectName("pushButton_10")
-        self.verticalLayout.addWidget(self.pushButton_10)
-        self.pushButton_12 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_12.setObjectName("pushButton_12")
-        self.verticalLayout.addWidget(self.pushButton_12)
-        self.pushButton_13 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_13.setObjectName("pushButton_13")
-        self.verticalLayout.addWidget(self.pushButton_13)
-        self.pushButton_14 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_14.setObjectName("pushButton_14")
-        self.verticalLayout.addWidget(self.pushButton_14)
-        self.pushButton_16 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_16.setObjectName("pushButton_16")
-        self.verticalLayout.addWidget(self.pushButton_16)
-        self.pushButton_15 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_15.setObjectName("pushButton_15")
-        self.verticalLayout.addWidget(self.pushButton_15)        
+        self.clean = QtWidgets.QPushButton(self.centralwidget)
+        self.clean.setGeometry(QtCore.QRect(100, 10, 80, 23))
+        self.clean.setObjectName("clean")
+        self.clean.setText("clean")
 
         tracker = MouseTracker(self.video_label)
         tracker.positionChanged.connect(self.on_positionChanged)
@@ -130,43 +104,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.retranslateUi()
 
-        #linkarfunções
-        self.pushButton.clicked.connect(self.loadVideo)
-        #self.pushButton_2.clicked.connect(self.mouse)
-        self.pushButton_3.clicked.connect(self.playPause)
-        self.pushButton_4.clicked.connect(self.reiniciar)
-        self.pushButton_17.clicked.connect(self.marcar)
-        self.pushButton_5.clicked.connect(lambda : self.createMarker((self.pushButton_5.x(), self.pushButton_5.y()), self.pushButton_5.objectName()))
-        self.pushButton_6.clicked.connect(lambda : self.createMarker((self.pushButton_6.x(), self.pushButton_6.y()), self.pushButton_6.objectName()))
-        self.pushButton_7.clicked.connect(lambda : self.createMarker((self.pushButton_7.x(), self.pushButton_7.y()), self.pushButton_7.objectName()))
-        self.pushButton_8.clicked.connect(lambda : self.createMarker((self.pushButton_8.x(), self.pushButton_8.y()), self.pushButton_8.objectName()))
-
-        #desabilitar botões
-        self.pushButton_2.setEnabled(False)
-        self.pushButton_3.setEnabled(False)
-        self.pushButton_4.setEnabled(False)
-
-        self.visibilityButton = False
-
-        self.pushButton_5.setVisible(self.visibilityButton)
-        self.pushButton_6.setVisible(self.visibilityButton)
-        self.pushButton_7.setVisible(self.visibilityButton)
-        self.pushButton_8.setVisible(self.visibilityButton)
-        self.pushButton_9.setVisible(self.visibilityButton)
-        self.pushButton_10.setVisible(self.visibilityButton)
-        self.pushButton_11.setVisible(self.visibilityButton)
-        self.pushButton_12.setVisible(self.visibilityButton)
-        self.pushButton_13.setVisible(self.visibilityButton)
-        self.pushButton_14.setVisible(self.visibilityButton)
-        self.pushButton_15.setVisible(self.visibilityButton)
-        self.pushButton_16.setVisible(self.visibilityButton)
-
         QtCore.QMetaObject.connectSlotsByName(self)
 
         self.started = False
 
+        self.index = None
+        self.keepMarker = False
+
+        self.dx = 0
+        self.dy = 0
+
+        self.frame = None
+        self.resolution = [0,0]
+        self.getted = []
+
         #Thead
         self.worker = ThreadClass()
+
+        self.setAcceptDrops(True)
 
     @QtCore.pyqtSlot(QtCore.QPoint)
     def on_positionChanged(self, pos):
@@ -178,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         delta = QtCore.QPoint(a, b)
         self.label_position.show()
         self.label_position.move(pos + delta)
-        self.label_position.setText("(%d, %d)" % (pos.x(), pos.y()))
+        self.label_position.setText("(%d, %d)" % (pos.x() + self.dx, pos.y() + self.dy))
         self.label_position.adjustSize()
 
     def retranslateUi(self):
@@ -186,20 +141,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton.setText(_translate("MainWindow", "Open"))
         self.pushButton_2.setText(_translate("MainWindow", "Save"))
         self.pushButton_3.setText(_translate("MainWindow", "Play"))
-        self.pushButton_4.setText(_translate("MainWindow", "Reiniciar"))
-        self.pushButton_5.setText(_translate("MainWindow", "CE"))
-        self.pushButton_6.setText(_translate("MainWindow", "CD"))
-        self.pushButton_8.setText(_translate("MainWindow", "ME"))
-        self.pushButton_7.setText(_translate("MainWindow", "MD"))
-        self.pushButton_9.setText(_translate("MainWindow", "GAE1"))
-        self.pushButton_11.setText(_translate("MainWindow", "GAE2"))
-        self.pushButton_10.setText(_translate("MainWindow", "GAD1"))
-        self.pushButton_12.setText(_translate("MainWindow", "GAD2"))
-        self.pushButton_13.setText(_translate("MainWindow", "PAE1"))
-        self.pushButton_14.setText(_translate("MainWindow", "PAE2"))
-        self.pushButton_16.setText(_translate("MainWindow", "PAD1"))
-        self.pushButton_15.setText(_translate("MainWindow", "PAD2"))
-        self.pushButton_17.setText(_translate("MainWindow", "MARCAR"))
+        self.pushButton_4.setText(_translate("MainWindow", "Restart"))
+        self.pushButton_5.setText(_translate("MainWindow", "Mark"))
+        self.check.setText(_translate("MainWindow", "Check"))
+        self.buttonList[0].setText(_translate("MainWindow", "Corner esquerdo"))
+        self.buttonList[1].setText(_translate("MainWindow", "Corner direito"))        
+        self.buttonList[2].setText(_translate("MainWindow", "Meio esquerdo"))
+        self.buttonList[3].setText(_translate("MainWindow", "Meio direito"))
+        self.buttonList[4].setText(_translate("MainWindow", "Grande area 1"))
+        self.buttonList[5].setText(_translate("MainWindow", "Grande area 2"))
+        self.buttonList[6].setText(_translate("MainWindow", "Grande area 3"))
+        self.buttonList[7].setText(_translate("MainWindow", "Grande area 4"))
+        self.buttonList[8].setText(_translate("MainWindow", "Pequena area 1"))
+        self.buttonList[9].setText(_translate("MainWindow", "Pequena area 2"))
+        self.buttonList[10].setText(_translate("MainWindow", "Pequena area 3"))
+        self.buttonList[11].setText(_translate("MainWindow", "Pequena area 4"))
+
+        #linkar funções
+        self.pushButton.clicked.connect(self.loadVideo)
+        self.pushButton_2.clicked.connect(self.saveMarker)
+        self.pushButton_3.clicked.connect(self.playPause)
+        self.pushButton_4.clicked.connect(self.restart)
+        self.pushButton_5.clicked.connect(self.toMark)
+        self.clean.clicked.connect(self.cleanMarker)
+        self.check.clicked.connect(self.checkMarker)
+
+        #desabilitar botões
+        self.pushButton_2.setEnabled(False)
+        self.pushButton_3.setEnabled(False)
+        self.pushButton_4.setEnabled(False)
+        self.pushButton_5.setEnabled(False)
+        self.clean.setEnabled(False)
+        self.check.setEnabled(False)
 
     def playPause(self):
         if self.started:
@@ -211,22 +184,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker.start()
             self.pushButton_3.setText("Pause")
 
-    def resizeImage(self, image):
-        #print(image.shape)
-        if image.shape[0] < rect.height() or image.shape[1] < rect.width():
-            self.video_label.setGeometry(QtCore.QRect(0, 0, image.shape[1], image.shape[0]))
-            self.layoutWidget.setGeometry(QtCore.QRect(110, image.shape[0] - 20, 340, 25))
-            print("teste", self.video_label.geometry().width(), self.video_label.geometry().height())
-
     def setPhoto(self, image):
-        if image.shape[0] > rect.height() or image.shape[1] > rect.width():
-            dim = (rect.width(), rect.height())
-            image = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
-        frame = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self.frame = image
+        frame = cv2.cvtColor(image[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGB)
         image = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
         self.video_label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-    def reiniciar(self):
+    def restart(self):
         self.worker.kill()
         self.worker.quit()
         if self.filename != "":
@@ -239,7 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.video = cv2.VideoCapture(self.filename)
             ret, frame = self.video.read()
             self.worker.video = self.video
-            self.worker.resizeImage = self.resizeImage
             self.worker.start()
 
     def loadVideo(self):
@@ -253,36 +216,175 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.started = True
                 self.pushButton_3.setText("Pause")
             self.video = cv2.VideoCapture(self.filename)
-            ret, frame = self.video.read()
+            ret, self.frame = self.video.read()
             self.worker.video = self.video
-            self.worker.resize = self.resizeImage
             self.worker.setPhoto = self.setPhoto
             self.worker.start()
             self.pushButton_2.setEnabled(True)
             self.pushButton_3.setEnabled(True)
             self.pushButton_4.setEnabled(True)
+            self.pushButton_5.setEnabled(True)
+            self.check.setEnabled(True)
+            self.clean.setEnabled(True)
             if ret:
-                self.resizeImage(frame)
-                self.setPhoto(frame)
+                self.setPhoto(self.frame)
 
-    def marcar(self):
+    def toMark(self):
         self.visibilityButton = ~self.visibilityButton
-        self.pushButton_5.setVisible(self.visibilityButton)
-        self.pushButton_6.setVisible(self.visibilityButton)
-        self.pushButton_7.setVisible(self.visibilityButton)
-        self.pushButton_8.setVisible(self.visibilityButton)
-        self.pushButton_9.setVisible(self.visibilityButton)
-        self.pushButton_10.setVisible(self.visibilityButton)
-        self.pushButton_11.setVisible(self.visibilityButton)
-        self.pushButton_12.setVisible(self.visibilityButton)
-        self.pushButton_13.setVisible(self.visibilityButton)
-        self.pushButton_14.setVisible(self.visibilityButton)
-        self.pushButton_15.setVisible(self.visibilityButton)
-        self.pushButton_16.setVisible(self.visibilityButton)
+        for button in self.buttonList:
+            button.setVisible(self.visibilityButton)
+
+    def dragEnterEvent(self, event):
+        event.accept()
+
+    def dropEvent(self, event):
+        position = event.pos()
+        i = self.marker.index(event.source())
+        #print("posi", position.x(), position)
+        self.marker[i].move(position.x(), position.y()-25)
+        event.accept()
+
+    def saveMarker(self):
+        getted = []
+        arquivo = open('coordenadas.txt', 'w')
+        arquivo.write('[[' + str(self.marker[0].x()+self.dx) + ',' +str(self.marker[0].y() + 25 + self.dy) + ',1]')
+        getted.append([self.marker[0].x()+self.dx, self.marker[0].y() + 25 + self.dy, 1])
+        for marker in self.marker[1:]:
+            arquivo.write(',['+ str(marker.x( )+ self.dx)+ ',' + str(marker.y()+25+self.dy) + ',1]')
+            getted.append([marker.x() + self.dx, marker.y() + 25 + self.dy, 1])
+        arquivo.write(']')
+        arquivo.close()
+        self.getted = np.array(getted, np.float32)
+        ret, self.frame = self.video.read()
+        cv2.imwrite("frame.png", self.frame)
+
+    def cleanMarker(self):
+        i = 0
+        for marker in self.marker:
+            marker.move(0, 0)
+            marker.setVisible(False)
+            i += 1
+        
+    def buttonClicked(self, index, button):
+        self.keepMarker = True
+        self.index = (self.sender()).index
+        #print("Here", (self.sender()).index)
     
-    def createMarker(self, pos, name):
-        #print(pos[0], name)
-        self.moveObject = MovingObject(pos[0]+50, pos[1], 40)
+    def moveMarker(self, a):
+        for marker in self.marker:
+            if marker.isVisible():
+                position = marker.pos()
+                marker.move(position.x() - a[0], position.y() - a[1])
+                #print(position, position.x() - a[0], position.y() - a[1])
+
+    def mousePressEvent(self, event):
+        position = event.pos()
+        if self.keepMarker:
+            self.keepMarker = False
+            self.marker[self.index].move(position.x(), position.y()-25)
+            self.marker[self.index].setVisible(True)
+        #print("clicked", self.index, event.pos())
+
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        a = 50
+        if self.frame is not None:
+            if (a0.key() == QtCore.Qt.Key_6):
+                if rect.width() + self.dx + a > self.frame.shape[1]:
+                    a = self.frame.shape[1] - (self.dx + rect.width())
+                    #print(self.frame.shape[1], self.dx, rect.width(), a)
+                self.dx += a
+                self.moveMarker([a,0])
+                self.setPhoto(self.frame)
+            elif (a0.key() == QtCore.Qt.Key_4):
+                if self.dx - a < 0:
+                    a = self.dx
+                self.dx -= a
+                self.moveMarker([-a,0])
+                self.setPhoto(self.frame)
+            elif (a0.key() == QtCore.Qt.Key_8):
+                if self.dy - a < 0:
+                    a = self.dy
+                self.dy -= a
+                self.moveMarker([0, -a])
+                self.setPhoto(self.frame)
+            elif (a0.key() == QtCore.Qt.Key_2):
+                if rect.height() + self.dy + a > self.frame.shape[0]:
+                    a = self.frame.shape[0] - (self.dy + rect.height())
+                    #print(self.frame.shape[0] , (self.dy + rect.height()))
+                self.dy += a
+                self.moveMarker([0, a])
+                self.setPhoto(self.frame)
+        else:
+            print("não iniciado")
+        return super().keyPressEvent(a0)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        self.worker.kill()
+        self.worker.quit()
+        a0.accept()
+        return super().closeEvent(a0)
+
+    def getHomography(self, points, getted, index):
+        H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.RANSAC, 5.0)
+
+        id = np.zeros((12,1), np.int32)
+        id[index] = mask
+
+        return H, id
+
+    def alline(self, imgs, M):
+        w = np.array([[imgs[1].shape[1], 0, 1], [imgs[1].shape[1], imgs[1].shape[0], 1], [0, imgs[1].shape[0], 1], [0, 0, 1]])
+        s = np.dot(M, w.T)
+        for col in range(s.shape[1]):
+            s[0, col] =  s[0, col] / s[2,col]
+            s[1, col] =  s[1, col] / s[2,col]
+        s = np.int32(s)
+        dx = max(s[0])
+        dy = max(s[1])
+        dst = cv2.warpPerspective(imgs[1], M, ( max(dx, imgs[0].shape[1]), max(dy, imgs[0].shape[0])), borderValue = [0, 0, 0])
+        return dst
+
+    def drawField(self, H, mask):
+        field = cv2.imread("resources/campo.png")
+        result = self.frame.copy()
+
+        fieldPerspective = self.alline([self.frame, field], H)
+
+        result[np.where(fieldPerspective != [0,0,0])] = fieldPerspective[np.where(fieldPerspective != [0,0,0])]
+        cv2.imwrite("result.png", result)
+
+        #update frame
+        self.setPhoto(result)
+
+    def checkMarker(self):
+        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1]])
+        indexVisible = np.zeros((12,1), np.int32)
+
+        #Pause video
+        if self.started:
+            self.playPause()
+
+        #Save and filter visible marker
+        self.saveMarker()
+        for i in range(len(self.marker)):
+            if self.marker[i].isVisible():
+                indexVisible[i] = 1
+
+        # Feild to frame
+        H, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
+        
+        #draw field image
+        self.drawField(H, mask)
+
+        #Frame to field
+        H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
+
+        #check
+        print("Expected\n", self.getted[:,0:2])
+        a = np.dot(H, points.T).T
+        result = a[:,0:2]/a[:,2:3]
+        print("Result\n", result)
+
 
 class ThreadClass(QThread):
     video = None
@@ -291,7 +393,6 @@ class ThreadClass(QThread):
     def run(self):
         a = 0
         self.is_running = True
-        print('Starting thread...', )
         while self.video.isOpened() and self.is_running:
             ret, frame = self.video.read()
             if ret:
@@ -299,58 +400,22 @@ class ThreadClass(QThread):
                 time.sleep(1/30)
             else:
                 break
-        print("Fim do video")
 
     def stop(self):
         self.is_running = False
-        print('Stopping thread...')
 
     def kill(self):
         self.stop()
-        time.sleep(0.5)
+        time.sleep(0.1)
 
-
-class MovingObject(QGraphicsEllipseItem):
-    def __init__(self, x, y, r):
-        super().__init__(0, 0, r, r)
-        self.setPos(x, y)
-        self.setBrush(Qt.blue)
-        self.setAcceptHoverEvents(True)
-
-    # mouse hover event
-    def hoverEnterEvent(self, event):
-        app.instance().setOverrideCursor(Qt.OpenHandCursor)
-
-    def hoverLeaveEvent(self, event):
-        app.instance().restoreOverrideCursor()
-
-    # mouse click event
-    def mousePressEvent(self, event):
-        pass
-
-    def mouseMoveEvent(self, event):
-        orig_cursor_position = event.lastScenePos()
-        updated_cursor_position = event.scenePos()
-
-        orig_position = self.scenePos()
-
-        updated_cursor_x = updated_cursor_position.x() - orig_cursor_position.x() + orig_position.x()
-        updated_cursor_y = updated_cursor_position.y() - orig_cursor_position.y() + orig_position.y()
-        self.setPos(QPointF(updated_cursor_x, updated_cursor_y))
-
-    def mouseReleaseEvent(self, event):
-        print('x: {0}, y: {1}'.format(self.pos().x(), self.pos().y()))
 
 if __name__ == "__main__":
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
     screen = app.primaryScreen()
-    #print('Screen: %s' % screen.name())
     size = screen.size()
-    #print('Size: %d x %d' % (size.width(), size.height()))
     rect = screen.availableGeometry()
-    #print('Available: %d x %d' % (rect.width(), rect.height()))
     w = MainWindow()
     w.show()
     sys.exit(app.exec_())
