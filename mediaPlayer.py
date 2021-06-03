@@ -255,8 +255,8 @@ class MainWindow(QtWidgets.QMainWindow):
         arquivo.write(']')
         arquivo.close()
         self.getted = np.array(getted, np.float32)
-        ret, self.frame = self.video.read()
-        cv2.imwrite("frame.png", self.frame)
+        '''ret, self.frame = self.video.read()
+        cv2.imwrite("frame.png", self.frame)'''
 
     def cleanMarker(self):
         i = 0
