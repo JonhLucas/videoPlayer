@@ -11,5 +11,5 @@ Opencv</p>
 - Doze botões irão aparecer, clique no que deseja marcar e em seguida clique na posição de desejada do vídeo
 - É possível reposicionar os marcadores arrastando e soltando na tela ou clicando em seu respectivo botão.
 - Quando seu marcadores estiverem posicionados clique em Check
-- O vídeo será pausado a imagem campo.png será desenhada no frame atual.
+- O vídeo será pausado e a imagem campo.png será desenhada no frame atual.
 - Para remover o desenho do campo, clique em play para atualizar o frame atual.
