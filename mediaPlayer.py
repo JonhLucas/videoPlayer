@@ -6,7 +6,6 @@ from PyQt5.QtCore import *
 import cv2
 import time
 import numpy as np
-from numpy.lib.function_base import percentile
 
 from mouseTracker import MouseTracker
 from draggableLabel import draggableLabel
@@ -26,14 +25,18 @@ class MainWindow(QtWidgets.QMainWindow):
          "area_goal_line_left", "area_goal_line_right","area_line_left", "area_line_right",
          "box_goal_line_left", "box_goal_line_right", "box_line_left", "box_line_right"]
 
+        self.video_label = QtWidgets.QLabel(self)
+        self.video_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
+        self.video_label.setStyleSheet("background-color: darkgray")
+        self.video_label.setObjectName("video_label")
+
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setAutoFillBackground(False)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.video_label = QtWidgets.QLabel(self.centralwidget)
-        self.video_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
-        self.video_label.setStyleSheet("background-color: darkgray")
-        self.video_label.setObjectName("video_label")
+        self.front_label = QtWidgets.QLabel(self.centralwidget)
+        self.front_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
+        self.front_label.setObjectName("front_label")
 
         self.marker = []
         for i in range(0,12):
@@ -368,14 +371,15 @@ class MainWindow(QtWidgets.QMainWindow):
         transparance = self.horizontalSlider.value()/100
 
         self.field = self.alline([self.frame, self.imgField], self.fieldHomography)
+        
         #filterpoints
         mask = np.where(self.field != [0,0,0])
-        result[mask] = self.field[mask] * transparance + result[mask] * (1 - transparance)
-
+        
         #update frame
-        frame = cv2.cvtColor(result[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGB)
-        result = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
-        self.video_label.setPixmap(QtGui.QPixmap.fromImage(result))
+        self.field = cv2.cvtColor(self.field[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGBA)
+        self.field[:,:,3] = transparance * 255
+        result = QImage(self.field, self.field.shape[1], self.field.shape[0], self.field.strides[0], QImage.Format_RGBA8888)
+        self.front_label.setPixmap(QtGui.QPixmap.fromImage(result))
 
         return result
 
@@ -401,7 +405,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fieldHomography, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
         
         #draw field image
-        cv2.imwrite("result.png", self.drawField())
+        #cv2.imwrite("result.png", self.drawField())
+        self.drawField()
 
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
