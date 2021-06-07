@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 import cv2
 import time
 import numpy as np
+from numpy.lib.function_base import percentile
 
 from mouseTracker import MouseTracker
 from draggableLabel import draggableLabel
@@ -84,6 +85,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.check.setObjectName("check")
         self.horizontalLayout.addWidget(self.check)
 
+        #Slider
+        self.horizontalSlider = QtWidgets.QSlider(self.centralwidget)
+        self.horizontalSlider.setGeometry(QtCore.QRect(460, rect.height() - 80, 261, 16))
+        self.horizontalSlider.setMinimum(1)
+        self.horizontalSlider.setMaximum(100)
+        self.horizontalSlider.setVisible(False)
+        self.horizontalSlider.setSliderPosition(50)
+        self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.horizontalSlider.setObjectName("horizontalSlider")
+        self.horizontalSlider.valueChanged.connect(self.valueChanged)
+
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(10, 10, 80, 23))
         self.pushButton_5.setObjectName("save")
@@ -117,6 +129,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.frame = None
         self.resolution = [0,0]
         self.getted = []
+
+        self.field = None
+        self.fieldHomography = None
+        self.imgField = cv2.imread("resources/campo.png")
+
+        #Homography calculated
+        self.checked = False
 
         #Thead
         self.worker = ThreadClass()
@@ -344,21 +363,29 @@ class MainWindow(QtWidgets.QMainWindow):
         dst = cv2.warpPerspective(imgs[1], M, ( max(dx, imgs[0].shape[1]), max(dy, imgs[0].shape[0])), borderValue = [0, 0, 0])
         return dst
 
-    def drawField(self, H, mask):
-        field = cv2.imread("resources/campo.png")
+    def drawField(self):
         result = self.frame.copy()
+        transparance = self.horizontalSlider.value()/100
 
-        fieldPerspective = self.alline([self.frame, field], H)
-
-        result[np.where(fieldPerspective != [0,0,0])] = fieldPerspective[np.where(fieldPerspective != [0,0,0])]
-        cv2.imwrite("result.png", result)
+        self.field = self.alline([self.frame, self.imgField], self.fieldHomography)
+        #filterpoints
+        mask = np.where(self.field != [0,0,0])
+        result[mask] = self.field[mask] * transparance + result[mask] * (1 - transparance)
 
         #update frame
-        self.setPhoto(result)
+        frame = cv2.cvtColor(result[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGB)
+        result = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
+        self.video_label.setPixmap(QtGui.QPixmap.fromImage(result))
+
+        return result
 
     def checkMarker(self):
         points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1]])
         indexVisible = np.zeros((12,1), np.int32)
+        
+        #Slider
+        self.horizontalSlider.setVisible(True)
+        self.checked = True
 
         #Pause video
         if self.started:
@@ -371,19 +398,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 indexVisible[i] = 1
 
         # Feild to frame
-        H, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
+        self.fieldHomography, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
         
         #draw field image
-        self.drawField(H, mask)
+        cv2.imwrite("result.png", self.drawField())
 
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
 
         #check
         print("Expected\n", self.getted[:,0:2])
-        a = np.dot(H, points.T).T
+        a = np.dot(self.fieldHomography, points.T).T
         result = a[:,0:2]/a[:,2:3]
         print("Result\n", result)
+
+    def valueChanged(self):
+        self.drawField()
+
 
 
 class ThreadClass(QThread):
