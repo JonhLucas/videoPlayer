@@ -372,12 +372,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.field = self.alline([self.frame, self.imgField], self.fieldHomography)
         
-        #filterpoints
-        mask = np.where(self.field != [0,0,0])
-        
         #update frame
         self.field = cv2.cvtColor(self.field[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGBA)
         self.field[:,:,3] = transparance * 255
+        
+        #filterpoints
+        mask = np.where(self.field[:,:,0] == 0)
+        self.field[mask[0], mask[1], 3] = 0
+        
         result = QImage(self.field, self.field.shape[1], self.field.shape[0], self.field.strides[0], QImage.Format_RGBA8888)
         self.front_label.setPixmap(QtGui.QPixmap.fromImage(result))
 
