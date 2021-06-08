@@ -24,19 +24,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.nameMarker = ["corner_left", "corner_right", "mind_left", "mind_right",
          "area_goal_line_left", "area_goal_line_right","area_line_left", "area_line_right",
          "box_goal_line_left", "box_goal_line_right", "box_line_left", "box_line_right"]
-
-        self.video_label = QtWidgets.QLabel(self)
-        self.video_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
-        self.video_label.setStyleSheet("background-color: darkgray")
-        self.video_label.setObjectName("video_label")
+        
+        self.frontLabel = QtWidgets.QLabel(self)
+        self.frontLabel.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
+        self.frontLabel.setStyleSheet("background-color: darkgray")
+        self.frontLabel.setObjectName("frontLabel")
 
         self.centralwidget = QtWidgets.QWidget(self)
         self.centralwidget.setAutoFillBackground(False)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.front_label = QtWidgets.QLabel(self.centralwidget)
-        self.front_label.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
-        self.front_label.setObjectName("front_label")
+        self.videoLabel = QtWidgets.QLabel(self.centralwidget)
+        self.videoLabel.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
+        #self.videoLabel.setStyleSheet("background-color: red")
+        self.videoLabel.setObjectName("videoLabel")
+        #self.videoLabel.setScaledContents(False)
 
         self.marker = []
         for i in range(0,12):
@@ -108,10 +110,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clean.setObjectName("clean")
         self.clean.setText("clean")
 
-        tracker = MouseTracker(self.video_label)
+        tracker = MouseTracker(self.videoLabel)
         tracker.positionChanged.connect(self.on_positionChanged)
 
-        self.label_position = QtWidgets.QLabel(self.video_label, alignment=QtCore.Qt.AlignCenter)
+        self.label_position = QtWidgets.QLabel(self.videoLabel, alignment=QtCore.Qt.AlignCenter)
         self.label_position.setStyleSheet('background-color: lightgreen; border: 1px solid black')
         self.label_position.setObjectName("label_position")
 
@@ -128,6 +130,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.dx = 0
         self.dy = 0
+        self.frameWidth = rect.width()
+        self.frameHeight = rect.height()
 
         self.frame = None
         self.resolution = [0,0]
@@ -149,8 +153,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_positionChanged(self, pos):
         a = 30
         b = -15
-        if self.video_label.geometry().width() < 3*a + pos.x():
-            #print(self.video_label.geometry().width(), a + pos.x(), pos.x() - 2*a)
+        if self.videoLabel.geometry().width() < 3*a + pos.x():
+            #print(self.frontLabel.geometry().width(), a + pos.x(), pos.x() - 2*a)
             a = -(a*2)
         delta = QtCore.QPoint(a, b)
         self.label_position.show()
@@ -208,20 +212,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setPhoto(self, image):
         self.frame = image
-        frame = cv2.cvtColor(image[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGB)
-        image = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
-        self.video_label.setPixmap(QtGui.QPixmap.fromImage(image))
+        frame = cv2.cvtColor(image[self.dy: self.dy + self.frameHeight, self.dx: self.frameWidth + self.dx, :], cv2.COLOR_BGR2RGB)
+        img = QImage(frame, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_RGB888)
+        #print("setPhoto", frame.shape)
+        self.frontLabel.setPixmap(QtGui.QPixmap.fromImage(img))
 
     def restart(self):
         self.worker.kill()
         self.worker.quit()
         if self.filename != "":
-            if self.started:
-                self.started = False
-                self.pushButton_3.setText("Play")
-            else:
-                self.started = True
-                self.pushButton_3.setText("Pause")
+            self.started = True
+            self.pushButton_3.setText("Pause")
             self.video = cv2.VideoCapture(self.filename)
             ret, frame = self.video.read()
             self.worker.video = self.video
@@ -229,7 +230,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def loadVideo(self):
         _translate = QtCore.QCoreApplication.translate
-        self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
+        self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
         if self.filename != "":
             if self.started:
                 self.started = False
@@ -239,6 +240,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pushButton_3.setText("Pause")
             self.video = cv2.VideoCapture(self.filename)
             ret, self.frame = self.video.read()
+            #print(self.frame.shape[0], self.frame.shape[1], self.frameHeight, self.frameWidth)
+
+            if self.frame.shape[0] < rect.height() or self.frame.shape[1] < rect.width():
+                self.frameHeight = self.frame.shape[0]
+                self.frameWidth = self.frame.shape[1]
+            else:
+                self.frameWidth = rect.width()
+                self.frameHeight = rect.height()
+            #print(self.frame.shape[0], self.frame.shape[1], self.frameHeight, self.frameWidth)
+            self.frontLabel.setGeometry(QtCore.QRect(0, 0, self.frameWidth, self.frameHeight))
+
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
             self.worker.start()
@@ -277,8 +289,6 @@ class MainWindow(QtWidgets.QMainWindow):
         arquivo.write(']')
         arquivo.close()
         self.getted = np.array(getted, np.float32)
-        '''ret, self.frame = self.video.read()
-        cv2.imwrite("frame.png", self.frame)'''
 
     def cleanMarker(self):
         i = 0
@@ -311,9 +321,8 @@ class MainWindow(QtWidgets.QMainWindow):
         a = 50
         if self.frame is not None:
             if (a0.key() == QtCore.Qt.Key_6):
-                if rect.width() + self.dx + a > self.frame.shape[1]:
-                    a = self.frame.shape[1] - (self.dx + rect.width())
-                    #print(self.frame.shape[1], self.dx, rect.width(), a)
+                if self.frameWidth + self.dx + a > self.frame.shape[1]:
+                    a = self.frame.shape[1] - (self.dx + self.frameWidth)
                 self.dx += a
                 self.moveMarker([a,0])
                 self.setPhoto(self.frame)
@@ -330,9 +339,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.moveMarker([0, -a])
                 self.setPhoto(self.frame)
             elif (a0.key() == QtCore.Qt.Key_2):
-                if rect.height() + self.dy + a > self.frame.shape[0]:
-                    a = self.frame.shape[0] - (self.dy + rect.height())
-                    #print(self.frame.shape[0] , (self.dy + rect.height()))
+                if self.frameHeight + self.dy + a > self.frame.shape[0]:
+                    a = self.frame.shape[0] - (self.dy + self.frameHeight)
                 self.dy += a
                 self.moveMarker([0, a])
                 self.setPhoto(self.frame)
@@ -367,23 +375,19 @@ class MainWindow(QtWidgets.QMainWindow):
         return dst
 
     def drawField(self):
-        result = self.frame.copy()
-        transparance = self.horizontalSlider.value()/100
+        transparency = self.horizontalSlider.value() / 100
+        img = np.zeros((rect.height(), rect.width(), 4), np.int8)
+        
+        field = self.alline([self.frame, self.imgField], self.fieldHomography)
+        img[:self.frameHeight, :self.frameWidth, :3] = cv2.cvtColor(field[self.dy: self.dy + self.frameHeight,self.dx: self.dx + self.frameWidth,:], cv2.COLOR_BGR2RGB)
+        #print(field.shape, img.shape)
 
-        self.field = self.alline([self.frame, self.imgField], self.fieldHomography)
-        
-        #update frame
-        self.field = cv2.cvtColor(self.field[self.dy: self.dy + rect.height(), self.dx: rect.width() + self.dx, :], cv2.COLOR_BGR2RGBA)
-        self.field[:,:,3] = transparance * 255
-        
-        #filterpoints
-        mask = np.where(self.field[:,:,0] == 0)
-        self.field[mask[0], mask[1], 3] = 0
-        
-        result = QImage(self.field, self.field.shape[1], self.field.shape[0], self.field.strides[0], QImage.Format_RGBA8888)
-        self.front_label.setPixmap(QtGui.QPixmap.fromImage(result))
+        mask = np.where(field[:,:,0] != 0)
+        img[mask[0], mask[1], 3] = 255 * transparency
+        self.field = img
 
-        return result
+        image = QImage(img, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGBA8888)
+        self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def checkMarker(self):
         points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1]])
@@ -420,9 +424,11 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Result\n", result)
 
     def valueChanged(self):
-        self.drawField()
-
-
+        #self.drawField()
+        mask = np.where(self.field[:,:,0] != 0)
+        self.field[mask[0], mask[1], 3] = 255 * (self.horizontalSlider.value() / 100)
+        image = QImage(self.field, self.field.shape[1], self.field.shape[0], self.field.strides[0], QImage.Format_RGBA8888)
+        self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
 class ThreadClass(QThread):
     video = None
@@ -444,8 +450,7 @@ class ThreadClass(QThread):
 
     def kill(self):
         self.stop()
-        time.sleep(0.1)
-
+        #time.sleep(0.1)
 
 if __name__ == "__main__":
     import sys
