@@ -36,9 +36,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.videoLabel = QtWidgets.QLabel(self.centralwidget)
         self.videoLabel.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
-        #self.videoLabel.setStyleSheet("background-color: red")
         self.videoLabel.setObjectName("videoLabel")
-        #self.videoLabel.setScaledContents(False)
 
         self.marker = []
         for i in range(0,12):
@@ -240,7 +238,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pushButton_3.setText("Pause")
             self.video = cv2.VideoCapture(self.filename)
             ret, self.frame = self.video.read()
-            #print(self.frame.shape[0], self.frame.shape[1], self.frameHeight, self.frameWidth)
 
             if self.frame.shape[0] < rect.height() or self.frame.shape[1] < rect.width():
                 self.frameHeight = self.frame.shape[0]
@@ -248,8 +245,14 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.frameWidth = rect.width()
                 self.frameHeight = rect.height()
-            #print(self.frame.shape[0], self.frame.shape[1], self.frameHeight, self.frameWidth)
+
             self.frontLabel.setGeometry(QtCore.QRect(0, 0, self.frameWidth, self.frameHeight))
+
+            self.dx = 0
+            self.dy = 0
+            self.field = None
+            self.horizontalSlider.setVisible(False)
+            self.videoLabel.clear()
 
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
@@ -325,25 +328,24 @@ class MainWindow(QtWidgets.QMainWindow):
                     a = self.frame.shape[1] - (self.dx + self.frameWidth)
                 self.dx += a
                 self.moveMarker([a,0])
-                self.setPhoto(self.frame)
             elif (a0.key() == QtCore.Qt.Key_4):
                 if self.dx - a < 0:
                     a = self.dx
                 self.dx -= a
                 self.moveMarker([-a,0])
-                self.setPhoto(self.frame)
             elif (a0.key() == QtCore.Qt.Key_8):
                 if self.dy - a < 0:
                     a = self.dy
                 self.dy -= a
                 self.moveMarker([0, -a])
-                self.setPhoto(self.frame)
             elif (a0.key() == QtCore.Qt.Key_2):
                 if self.frameHeight + self.dy + a > self.frame.shape[0]:
                     a = self.frame.shape[0] - (self.dy + self.frameHeight)
                 self.dy += a
                 self.moveMarker([0, a])
-                self.setPhoto(self.frame)
+            self.setPhoto(self.frame)
+            if self.field is not None:
+                self.valueChanged()
         else:
             print("não iniciado")
         return super().keyPressEvent(a0)
@@ -379,12 +381,12 @@ class MainWindow(QtWidgets.QMainWindow):
         img = np.zeros((rect.height(), rect.width(), 4), np.int8)
         
         field = self.alline([self.frame, self.imgField], self.fieldHomography)
-        img[:self.frameHeight, :self.frameWidth, :3] = cv2.cvtColor(field[self.dy: self.dy + self.frameHeight,self.dx: self.dx + self.frameWidth,:], cv2.COLOR_BGR2RGB)
-        #print(field.shape, img.shape)
+        self.field = field
 
-        mask = np.where(field[:,:,0] != 0)
+        img[:self.frameHeight, :self.frameWidth, :3] = cv2.cvtColor(field[self.dy: self.dy + self.frameHeight,self.dx: self.dx + self.frameWidth,:], cv2.COLOR_BGR2RGB)
+
+        mask = np.where(img[:,:,0] != 0)
         img[mask[0], mask[1], 3] = 255 * transparency
-        self.field = img
 
         image = QImage(img, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGBA8888)
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
@@ -423,11 +425,18 @@ class MainWindow(QtWidgets.QMainWindow):
         result = a[:,0:2]/a[:,2:3]
         print("Result\n", result)
 
+        arquivo = open('homography.txt', 'w')
+        arquivo.write(str(self.fieldHomography) + '\n' + str(H1))
+        arquivo.close()
+
     def valueChanged(self):
-        #self.drawField()
-        mask = np.where(self.field[:,:,0] != 0)
-        self.field[mask[0], mask[1], 3] = 255 * (self.horizontalSlider.value() / 100)
-        image = QImage(self.field, self.field.shape[1], self.field.shape[0], self.field.strides[0], QImage.Format_RGBA8888)
+        img = np.zeros((rect.height(), rect.width(), 4), np.int8)
+        
+        img[:self.frameHeight, :self.frameWidth, :3] = cv2.cvtColor(self.field[self.dy: self.dy + self.frameHeight,self.dx: self.dx + self.frameWidth,:], cv2.COLOR_BGR2RGB)
+        mask = np.where(img[:,:,0] != 0)
+        img[mask[0], mask[1], 3] = 255 * self.horizontalSlider.value() / 100
+
+        image = QImage(img, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGBA8888)
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
 class ThreadClass(QThread):
