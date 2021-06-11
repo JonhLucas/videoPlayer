@@ -1,7 +1,7 @@
 from os import write
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QTransform
 from PyQt5.QtCore import *
 import cv2
 import time
@@ -38,32 +38,41 @@ class MainWindow(QtWidgets.QMainWindow):
         self.videoLabel.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
         self.videoLabel.setObjectName("videoLabel")
 
+        self.fieldMap = QtWidgets.QLabel(self.centralwidget)
+        self.fieldMap.setGeometry(QtCore.QRect(0, 0, 132, 210))
+        self.fieldMap.setObjectName("fieldMap")
+        pixmap = QtGui.QPixmap("resources/campo.png")
+        pixmap = pixmap.transformed(QTransform().rotate(90))
+        self.fieldMap.setPixmap(pixmap)
+        self.fieldMap.setScaledContents(True)
+        self.fieldMap.move(10, 50)
+        self.fieldMap.setVisible(self.visibilityButton)
+
         self.marker = []
-        for i in range(0,12):
+        for i in range(0,23):
             labelm = draggableLabel(self)
             labelm.move(0,0)
             labelm.setGeometry(QtCore.QRect(0, 0, 25, 25))
             labelm.setFrameShape(QtWidgets.QFrame.NoFrame)
             labelm.setPixmap(QtGui.QPixmap("resources/bandeira.png"))
             labelm.setScaledContents(True)
-            labelm.setObjectName(self.nameMarker[i])
+            labelm.setObjectName('marker' + str(i))
             labelm.setVisible(self.visibilityButton)
             self.marker.append(labelm)
-        
-        self.buttonLayout = QtWidgets.QWidget(self.centralwidget)
-        self.buttonLayout.setGeometry(QtCore.QRect(10, 40, 120, 360))
-        self.buttonLayout.setObjectName("buttonLayout")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.buttonLayout)
-        self.verticalLayout.setContentsMargins(0,0,0,0)
-        self.verticalLayout.setObjectName("verticalLayout")
+
+        #positionButton = [[135,40],[5,40],[135,150],[5,150],[110,40],[31,40],[110,75],[31,75],[88,40],[50,40],[88,60],[50,60]]
+        positionButton = [[135,40],[5,40],[135,150],[5,150],[110,40],[31,40],[110,75],[31,75],[88,40],[50,40],[88,60],[50,60], [69,150], [135,255],[5,255],[110,255],[31,255],[110,225],[31,225],[88,255],[50,255],[88,235],[50,235]]
+
         self.buttonList = []
-        for i in range(0, 12):
-            button = myButton()
+        for i in range(0, 23):
+            button = myButton(self.centralwidget)
             button.setObjectName("pushButton"+str(i))
             button.index = i
+            button.setGeometry(QtCore.QRect(positionButton[i][0], positionButton[i][1], 15, 15))
             button.setVisible(self.visibilityButton)
+            #button.setVisible(True)
             button.clicked.connect(lambda: self.buttonClicked(i, button))
-            self.verticalLayout.addWidget(button)
+            #self.verticalLayout.addWidget(button)
             self.buttonList.append(button)
 
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -75,18 +84,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton.setObjectName("pushButton")
         self.horizontalLayout.addWidget(self.pushButton)
-        self.pushButton_2 = QtWidgets.QPushButton(self.layoutWidget)
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.horizontalLayout.addWidget(self.pushButton_2)
+        
         self.pushButton_3 = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_3.setObjectName("pushButton_3")
         self.horizontalLayout.addWidget(self.pushButton_3)
         self.pushButton_4 = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_4.setObjectName("pushButton_4")
         self.horizontalLayout.addWidget(self.pushButton_4)
+
+        self.pushButton_2 = QtWidgets.QPushButton(self.layoutWidget)
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.horizontalLayout.addWidget(self.pushButton_2)
+
         self.check = QtWidgets.QPushButton(self.layoutWidget)
         self.check.setObjectName("check")
         self.horizontalLayout.addWidget(self.check)
+
 
         #Slider
         self.horizontalSlider = QtWidgets.QSlider(self.centralwidget)
@@ -101,12 +114,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(10, 10, 80, 23))
-        self.pushButton_5.setObjectName("save")
+        self.pushButton_5.setObjectName("mark")
+        
 
         self.clean = QtWidgets.QPushButton(self.centralwidget)
         self.clean.setGeometry(QtCore.QRect(100, 10, 80, 23))
         self.clean.setObjectName("clean")
         self.clean.setText("clean")
+
+        self.clear = QtWidgets.QPushButton(self.centralwidget)
+        self.clear.setGeometry(QtCore.QRect(750, rect.height() - 80, 80, 23))
+        self.clear.setObjectName("clear")
+        self.clear.setText("clear")
+        self.clear.setVisible(False)
+        #self
 
         tracker = MouseTracker(self.videoLabel)
         tracker.positionChanged.connect(self.on_positionChanged)
@@ -168,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_4.setText(_translate("MainWindow", "Restart"))
         self.pushButton_5.setText(_translate("MainWindow", "Mark"))
         self.check.setText(_translate("MainWindow", "Check"))
-        self.buttonList[0].setText(_translate("MainWindow", "Corner esquerdo"))
+        '''self.buttonList[0].setText(_translate("MainWindow", "Corner esquerdo"))
         self.buttonList[1].setText(_translate("MainWindow", "Corner direito"))        
         self.buttonList[2].setText(_translate("MainWindow", "Meio esquerdo"))
         self.buttonList[3].setText(_translate("MainWindow", "Meio direito"))
@@ -179,7 +200,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.buttonList[8].setText(_translate("MainWindow", "Pequena area 1"))
         self.buttonList[9].setText(_translate("MainWindow", "Pequena area 2"))
         self.buttonList[10].setText(_translate("MainWindow", "Pequena area 3"))
-        self.buttonList[11].setText(_translate("MainWindow", "Pequena area 4"))
+        self.buttonList[11].setText(_translate("MainWindow", "Pequena area 4"))'''
 
         #linkar funções
         self.pushButton.clicked.connect(self.loadVideo)
@@ -189,6 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_5.clicked.connect(self.toMark)
         self.clean.clicked.connect(self.cleanMarker)
         self.check.clicked.connect(self.checkMarker)
+        self.clear.clicked.connect(self.clearField)
 
         #desabilitar botões
         self.pushButton_2.setEnabled(False)
@@ -228,7 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def loadVideo(self):
         _translate = QtCore.QCoreApplication.translate
-        self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
+        #self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
+        self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
         if self.filename != "":
             if self.started:
                 self.started = False
@@ -257,7 +280,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
             self.worker.start()
-            self.pushButton_2.setEnabled(True)
             self.pushButton_3.setEnabled(True)
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
@@ -270,6 +292,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.visibilityButton = ~self.visibilityButton
         for button in self.buttonList:
             button.setVisible(self.visibilityButton)
+        self.fieldMap.setVisible(self.visibilityButton)
 
     def dragEnterEvent(self, event):
         event.accept()
@@ -282,7 +305,7 @@ class MainWindow(QtWidgets.QMainWindow):
         event.accept()
 
     def saveMarker(self):
-        getted = []
+        '''getted = []
         arquivo = open('coordenadas.txt', 'w')
         arquivo.write('[[' + str(self.marker[0].x()+self.dx) + ',' +str(self.marker[0].y() + 25 + self.dy) + ',1]')
         getted.append([self.marker[0].x()+self.dx, self.marker[0].y() + 25 + self.dy, 1])
@@ -291,7 +314,10 @@ class MainWindow(QtWidgets.QMainWindow):
             getted.append([marker.x() + self.dx, marker.y() + 25 + self.dy, 1])
         arquivo.write(']')
         arquivo.close()
-        self.getted = np.array(getted, np.float32)
+        self.getted = np.array(getted, np.float32)'''
+        transparency = self.horizontalSlider.value() / 100
+        cv2.imwrite("result.png",  self.field * transparency)
+        
 
     def cleanMarker(self):
         i = 0
@@ -359,7 +385,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def getHomography(self, points, getted, index):
         H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.RANSAC, 5.0)
 
-        id = np.zeros((12,1), np.int32)
+        id = np.zeros((23,1), np.int32)
         id[index] = mask
 
         return H, id
@@ -375,6 +401,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dy = max(s[1])
         dst = cv2.warpPerspective(imgs[1], M, ( max(dx, imgs[0].shape[1]), max(dy, imgs[0].shape[0])), borderValue = [0, 0, 0])
         return dst
+
+    def clearField(self):
+        self.videoLabel.clear()
+        self.field = None
+        self.clear.setVisible(False)
+        self.horizontalSlider.setVisible(False)
 
     def drawField(self):
         transparency = self.horizontalSlider.value() / 100
@@ -392,11 +424,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def checkMarker(self):
-        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1]])
-        indexVisible = np.zeros((12,1), np.int32)
+        #points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1]])
+        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
+        indexVisible = np.zeros((23,1), np.int32)
         
         #Slider
         self.horizontalSlider.setVisible(True)
+        self.clear.setVisible(True)
         self.checked = True
 
         #Pause video
@@ -404,10 +438,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.playPause()
 
         #Save and filter visible marker
-        self.saveMarker()
+        #self.saveMarker()
+        self.pushButton_2.setEnabled(True)
+        getted = []
         for i in range(len(self.marker)):
+            getted.append([self.marker[i].x() + self.dx, self.marker[i].y() + 25 + self.dy, 1])
             if self.marker[i].isVisible():
                 indexVisible[i] = 1
+        self.getted = np.array(getted, np.float32)
 
         # Feild to frame
         self.fieldHomography, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
@@ -420,15 +458,16 @@ class MainWindow(QtWidgets.QMainWindow):
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
 
         #check
-        print("Expected\n", self.getted[:,0:2])
+        '''print("Expected\n", self.getted[:,0:2])
         a = np.dot(self.fieldHomography, points.T).T
         result = a[:,0:2]/a[:,2:3]
-        print("Result\n", result)
+        print("Result\n", result)'''
 
-        arquivo = open('homography.txt', 'w')
+        filename = self.filename[:-4].split('/')
+        arquivo = open(filename[-1] + '_homography.txt', 'w')
         arquivo.write(str(self.fieldHomography) + '\n' + str(H1))
         arquivo.close()
-
+        
     def valueChanged(self):
         img = np.zeros((rect.height(), rect.width(), 4), np.int8)
         
