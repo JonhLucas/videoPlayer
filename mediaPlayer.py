@@ -316,7 +316,9 @@ class MainWindow(QtWidgets.QMainWindow):
         arquivo.close()
         self.getted = np.array(getted, np.float32)'''
         transparency = self.horizontalSlider.value() / 100
-        cv2.imwrite("result.png",  self.field * transparency)
+        filename = self.filename[:-4].split('/')
+        cv2.imwrite(filename[-1] + "_output.png",  self.frame + self.field * transparency)
+        #print(self.field.shape, self.frame.shape)
         
 
     def cleanMarker(self):
@@ -391,15 +393,15 @@ class MainWindow(QtWidgets.QMainWindow):
         return H, id
 
     def alline(self, imgs, M):
-        w = np.array([[imgs[1].shape[1], 0, 1], [imgs[1].shape[1], imgs[1].shape[0], 1], [0, imgs[1].shape[0], 1], [0, 0, 1]])
+        '''w = np.array([[imgs[1].shape[1], 0, 1], [imgs[1].shape[1], imgs[1].shape[0], 1], [0, imgs[1].shape[0], 1], [0, 0, 1]])
         s = np.dot(M, w.T)
         for col in range(s.shape[1]):
             s[0, col] =  s[0, col] / s[2,col]
             s[1, col] =  s[1, col] / s[2,col]
         s = np.int32(s)
         dx = max(s[0])
-        dy = max(s[1])
-        dst = cv2.warpPerspective(imgs[1], M, ( max(dx, imgs[0].shape[1]), max(dy, imgs[0].shape[0])), borderValue = [0, 0, 0])
+        dy = max(s[1])'''
+        dst = cv2.warpPerspective(imgs[1], M, (imgs[0].shape[1], imgs[0].shape[0]), borderValue = [0, 0, 0])
         return dst
 
     def clearField(self):
