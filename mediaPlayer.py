@@ -6,6 +6,8 @@ from PyQt5.QtCore import *
 import cv2
 import time
 import numpy as np
+import csv
+#import pandas as pd
 
 from mouseTracker import MouseTracker
 from draggableLabel import draggableLabel
@@ -189,18 +191,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_4.setText(_translate("MainWindow", "Restart"))
         self.pushButton_5.setText(_translate("MainWindow", "Mark"))
         self.check.setText(_translate("MainWindow", "Check"))
-        '''self.buttonList[0].setText(_translate("MainWindow", "Corner esquerdo"))
-        self.buttonList[1].setText(_translate("MainWindow", "Corner direito"))        
-        self.buttonList[2].setText(_translate("MainWindow", "Meio esquerdo"))
-        self.buttonList[3].setText(_translate("MainWindow", "Meio direito"))
-        self.buttonList[4].setText(_translate("MainWindow", "Grande area 1"))
-        self.buttonList[5].setText(_translate("MainWindow", "Grande area 2"))
-        self.buttonList[6].setText(_translate("MainWindow", "Grande area 3"))
-        self.buttonList[7].setText(_translate("MainWindow", "Grande area 4"))
-        self.buttonList[8].setText(_translate("MainWindow", "Pequena area 1"))
-        self.buttonList[9].setText(_translate("MainWindow", "Pequena area 2"))
-        self.buttonList[10].setText(_translate("MainWindow", "Pequena area 3"))
-        self.buttonList[11].setText(_translate("MainWindow", "Pequena area 4"))'''
 
         #linkar funções
         self.pushButton.clicked.connect(self.loadVideo)
@@ -305,21 +295,17 @@ class MainWindow(QtWidgets.QMainWindow):
         event.accept()
 
     def saveMarker(self):
-        '''getted = []
-        arquivo = open('coordenadas.txt', 'w')
-        arquivo.write('[[' + str(self.marker[0].x()+self.dx) + ',' +str(self.marker[0].y() + 25 + self.dy) + ',1]')
-        getted.append([self.marker[0].x()+self.dx, self.marker[0].y() + 25 + self.dy, 1])
-        for marker in self.marker[1:]:
-            arquivo.write(',['+ str(marker.x( )+ self.dx)+ ',' + str(marker.y()+25+self.dy) + ',1]')
-            getted.append([marker.x() + self.dx, marker.y() + 25 + self.dy, 1])
-        arquivo.write(']')
-        arquivo.close()
-        self.getted = np.array(getted, np.float32)'''
         transparency = self.horizontalSlider.value() / 100
         filename = self.filename[:-4].split('/')
         cv2.imwrite(filename[-1] + "_output.png",  self.frame + self.field * transparency)
         #print(self.field.shape, self.frame.shape)
-        
+        filename = self.filename[:-4].split('/')
+        doc = open(filename[-1] + '_points.csv', 'w')
+        with doc:
+            writer = csv.writer(doc)
+            for row in self.getted:
+                writer.writerow(row)
+        doc.close()
 
     def cleanMarker(self):
         i = 0
@@ -426,7 +412,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def checkMarker(self):
-        #points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1]])
         points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
         indexVisible = np.zeros((23,1), np.int32)
         
@@ -440,7 +425,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.playPause()
 
         #Save and filter visible marker
-        #self.saveMarker()
         self.pushButton_2.setEnabled(True)
         getted = []
         for i in range(len(self.marker)):
@@ -453,22 +437,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fieldHomography, mask = self.getHomography(points, self.getted, indexVisible.ravel() == 1)
         
         #draw field image
-        #cv2.imwrite("result.png", self.drawField())
         self.drawField()
 
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
 
-        #check
-        '''print("Expected\n", self.getted[:,0:2])
-        a = np.dot(self.fieldHomography, points.T).T
-        result = a[:,0:2]/a[:,2:3]
-        print("Result\n", result)'''
-
+        #save Homography
         filename = self.filename[:-4].split('/')
-        arquivo = open(filename[-1] + '_homography.txt', 'w')
-        arquivo.write(str(self.fieldHomography) + '\n' + str(H1))
-        arquivo.close()
+        doc = open(filename[-1] + '_homography.csv', 'w')
+        with doc:
+            writer = csv.writer(doc)
+            for row in H1:
+                writer.writerow(row)
+        doc.close()
         
     def valueChanged(self):
         img = np.zeros((rect.height(), rect.width(), 4), np.int8)
