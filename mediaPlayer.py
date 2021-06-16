@@ -269,7 +269,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
-            self.worker.start()
+            try:
+                self.worker.start()
+            except:
+                print("erro ao iniciar Theard de atualização de frames")
             self.pushButton_3.setEnabled(True)
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
@@ -313,11 +316,14 @@ class MainWindow(QtWidgets.QMainWindow):
             marker.move(0, 0)
             marker.setVisible(False)
             i += 1
+        for button in self.buttonList:
+            button.setStyleSheet('background-color: white;')
         
     def buttonClicked(self, index, button):
         self.keepMarker = True
         self.index = (self.sender()).index
         #print("Here", (self.sender()).index)
+        (self.sender()).setStyleSheet('background-color: red;')
     
     def moveMarker(self, a):
         for marker in self.marker:
@@ -333,6 +339,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.marker[self.index].move(position.x(), position.y()-25)
             self.marker[self.index].setVisible(True)
         #print("clicked", self.index, event.pos())
+        self.buttonList[self.index].setStyleSheet('background-color: green;')
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         a = 50
