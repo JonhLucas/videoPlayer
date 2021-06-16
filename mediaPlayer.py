@@ -269,10 +269,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
+            
             try:
                 self.worker.start()
             except:
                 print("erro ao iniciar Theard de atualização de frames")
+
             self.pushButton_3.setEnabled(True)
             self.pushButton_4.setEnabled(True)
             self.pushButton_5.setEnabled(True)
@@ -378,6 +380,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return super().closeEvent(a0)
 
     def getHomography(self, points, getted, index):
+        #H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], 0)
         H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.RANSAC, 5.0)
 
         id = np.zeros((23,1), np.int32)
