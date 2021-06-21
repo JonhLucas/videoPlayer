@@ -293,7 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def dropEvent(self, event):
         position = event.pos()
         i = self.marker.index(event.source())
-        print("posi", position.x(), position)
+        #print("posi", position.x(), position)
         self.marker[i].move(position.x(), position.y()-25)
         event.accept()
         if(self.count >= 4):
@@ -344,7 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #print("clicked", self.index, event.pos())
             self.buttonList[self.index].setStyleSheet('background-color: green;')
             self.count += 1
-            print(self.count)
+            #print(self.count)
             if(self.count >= 4):
                 self.quickCheck()
 
@@ -458,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.marker[i].isVisible():
                 indexVisible[i] = 1
         self.getted = np.array(getted, np.float32)
-        
+
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
 
