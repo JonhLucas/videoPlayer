@@ -22,10 +22,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setMinimumSize(QtCore.QSize(640, 500))
 
         self.visibilityButton = False
-
-        self.nameMarker = ["corner_left", "corner_right", "mind_left", "mind_right",
-         "area_goal_line_left", "area_goal_line_right","area_line_left", "area_line_right",
-         "box_goal_line_left", "box_goal_line_right", "box_line_left", "box_line_right"]
         
         self.frontLabel = QtWidgets.QLabel(self)
         self.frontLabel.setGeometry(QtCore.QRect(0, 0, rect.width(), rect.height()))
@@ -267,6 +263,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.horizontalSlider.setVisible(False)
             self.videoLabel.clear()
 
+            self.count = 0
+
             self.worker.video = self.video
             self.worker.setPhoto = self.setPhoto
             
@@ -295,9 +293,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def dropEvent(self, event):
         position = event.pos()
         i = self.marker.index(event.source())
-        #print("posi", position.x(), position)
+        print("posi", position.x(), position)
         self.marker[i].move(position.x(), position.y()-25)
         event.accept()
+        if(self.count >= 4):
+            self.quickCheck()
 
     def saveMarker(self):
         transparency = self.horizontalSlider.value() / 100
@@ -314,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def cleanMarker(self):
         i = 0
+        self.count = 0
         for marker in self.marker:
             marker.move(0, 0)
             marker.setVisible(False)
@@ -340,8 +341,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.keepMarker = False
             self.marker[self.index].move(position.x(), position.y()-25)
             self.marker[self.index].setVisible(True)
-        #print("clicked", self.index, event.pos())
-        self.buttonList[self.index].setStyleSheet('background-color: green;')
+            #print("clicked", self.index, event.pos())
+            self.buttonList[self.index].setStyleSheet('background-color: green;')
+            self.count += 1
+            print(self.count)
+            if(self.count >= 4):
+                self.quickCheck()
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         a = 50
@@ -389,14 +394,6 @@ class MainWindow(QtWidgets.QMainWindow):
         return H, id
 
     def alline(self, imgs, M):
-        '''w = np.array([[imgs[1].shape[1], 0, 1], [imgs[1].shape[1], imgs[1].shape[0], 1], [0, imgs[1].shape[0], 1], [0, 0, 1]])
-        s = np.dot(M, w.T)
-        for col in range(s.shape[1]):
-            s[0, col] =  s[0, col] / s[2,col]
-            s[1, col] =  s[1, col] / s[2,col]
-        s = np.int32(s)
-        dx = max(s[0])
-        dy = max(s[1])'''
         dst = cv2.warpPerspective(imgs[1], M, (imgs[0].shape[1], imgs[0].shape[0]), borderValue = [0, 0, 0])
         return dst
 
@@ -421,7 +418,7 @@ class MainWindow(QtWidgets.QMainWindow):
         image = QImage(img, img.shape[1], img.shape[0], img.strides[0], QImage.Format_RGBA8888)
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
-    def checkMarker(self):
+    def quickCheck(self):
         points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
         indexVisible = np.zeros((23,1), np.int32)
         
@@ -448,6 +445,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #draw field image
         self.drawField()
+        
+    def checkMarker(self):
+
+        self.quickCheck()
 
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
