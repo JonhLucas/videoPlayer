@@ -447,9 +447,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.drawField()
         
     def checkMarker(self):
+        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
+        indexVisible = np.zeros((23,1), np.int32)
 
         self.quickCheck()
 
+        getted = []
+        for i in range(len(self.marker)):
+            getted.append([self.marker[i].x() + self.dx, self.marker[i].y() + 25 + self.dy, 1])
+            if self.marker[i].isVisible():
+                indexVisible[i] = 1
+        self.getted = np.array(getted, np.float32)
+        
         #Frame to field
         H1, mask = self.getHomography(self.getted, points, indexVisible.ravel() == 1)
 
