@@ -16,7 +16,6 @@ import csv
 from mouseTracker import MouseTracker
 from draggableLabel import draggableLabel
 from myButton import myButton
-from TableWidget import TableWidget
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -54,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.count = 0
         self.marker = []
 
-        self.default = 23
+        self.default = 33
         self.dynamic = 5
         for i in range(0, self.default):
             labelm = pinLabel(self)
@@ -71,7 +70,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mask = np.zeros((self.default), np.int32)
 
         #print(self.mask)
-        positionButton = [[135,40],[5,40],[135,150],[5,150],[110,40],[31,40],[110,75],[31,75],[88,40],[50,40],[88,60],[50,60], [69,150], [135,255],[5,255],[110,255],[31,255],[110,225],[31,225],[88,255],[50,255],[88,235],[50,235]]
+        positionButton = [[135,40],[5,40],[135,150],[5,150],[110,40],[31,40],[110,75],[31,75],[88,40],[50,40],[88,60],[50,60], [69,150], [135,255]
+        ,[5,255],[110,255],[31,255],[110,225],[31,225],[88,255],[50,255],[88,235],[50,235],[85,75],[54,75],[69,85],[69,210], [85,223], [54,223],[92,150],[45,150], [69,130], [69,170]]
 
         self.buttonList = []
         for i in range(0, self.default):
@@ -279,8 +279,8 @@ class MainWindow(QtWidgets.QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         #self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
 
-        self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
-        #self.filename = 'resources/vlc-record-20210410_180547.mp4'
+        #self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
+        self.filename = 'resources/vlc-record-20210410_180547.mp4'
         if self.filename != "":
             if self.started:
                 self.started = False
@@ -477,8 +477,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.videoLabel.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def quickCheck(self):
-        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
-        indexVisible = np.zeros((23,1), np.int32)
+        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1], [885, 403.1, 1], [885, 256.8, 1], [848.5, 330, 1], [201.5, 330, 1], [165, 403.1, 1], [165, 256.8, 1],[525, 421.5, 1],[525, 238.5, 1],[616.5,330,1],[433.5,330,1]])
+        indexVisible = np.zeros((self.default,1), np.int32)
 
         if self.tableWidget.rowCount() > 0:
             l = []
@@ -535,8 +535,12 @@ class MainWindow(QtWidgets.QMainWindow):
         doc.close()
         
     def checkMarker(self):
-        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1], [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1], [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1], [55, 421.5, 1], [55, 238.5, 1]])
-        indexVisible = np.zeros((23,1), np.int32)
+        points = np.array([[1050, 660, 1],[1050, 0, 1],[525, 660, 1],[525, 0, 1],[1050, 531.5, 1],[1050, 128.5, 1],[885, 531.5, 1],
+         [885, 128.5, 1],[1050, 421.5, 1],[1050 ,238.5, 1],[995, 421.5, 1],[995, 238.5, 1], [525, 330, 1], [0, 660, 1],[0, 0, 1],
+          [0, 531.5, 1],[0, 128.5, 1],[165, 531.5, 1], [165, 128.5, 1], [0, 421.5, 1], [0 ,238.5, 1],
+           [55, 421.5, 1], [55, 238.5, 1], [885, 403.1, 1], [885, 256.8, 1], [848.5, 330, 1], [201.5, 330, 1],
+            [165, 403.1, 1], [165, 256.8, 1],[525, 421.5, 1],[525, 238.5, 1],[616.5,330,1],[433.5,330,1]])
+        indexVisible = np.zeros((self.default,1), np.int32)
 
         self.quickCheck()
 
