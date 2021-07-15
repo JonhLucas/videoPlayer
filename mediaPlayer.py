@@ -279,8 +279,8 @@ class MainWindow(QtWidgets.QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         #self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
 
-        #self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
-        self.filename = 'resources/vlc-record-20210410_180547.mp4'
+        self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
+        #self.filename = 'resources/vlc-record-20210410_180547.mp4'
         if self.filename != "":
             if self.started:
                 self.started = False
