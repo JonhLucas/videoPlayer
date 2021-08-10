@@ -436,8 +436,8 @@ class MainWindow(QtWidgets.QMainWindow):
         return super().closeEvent(a0)
 
     def getHomography(self, points, getted, index):
-        #H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], 0)
-        H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.RANSAC, 5.0)
+        H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], 0)
+        #H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.RANSAC, 5.0)
         #H, mask = cv2.findHomography(points[index, 0:2], getted[index, 0:2], cv2.LMEDS, 5.0)
 
         #print(getted[index, 0:2])
