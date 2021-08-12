@@ -1,5 +1,3 @@
-from os import PRIO_PGRP, SEEK_CUR
-
 from numpy.core.fromnumeric import resize
 from pin import pinLabel
 from typing import Sequence
@@ -278,9 +276,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def loadVideo(self):
         _translate = QtCore.QCoreApplication.translate
         #self.filename = QFileDialog.getOpenFileName(filter="video(*.mp4 *.avi)")[0]
+        #self.filename = 'resources/vlc-record-20210410_180547.mp4'
 
         self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
-        #self.filename = 'resources/vlc-record-20210410_180547.mp4'
         if self.filename != "":
             if self.started:
                 self.started = False
@@ -288,8 +286,22 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.started = True
                 self.pushButton_3.setText("Pause")
-            self.video = cv2.VideoCapture(self.filename)
-            ret, self.frame = self.video.read()
+            
+            tipo = (self.filename.split('.')[-1])
+            video_ext = ['mp4', 'avi', 'mov', 'mpg', 'mpeg', 'wmv', 'm4v']
+            if tipo in video_ext:
+                self.video = cv2.VideoCapture(self.filename)
+                ret, self.frame = self.video.read()
+                self.worker.video = self.video
+                self.worker.setPhoto = self.setPhoto
+                try:
+                    self.worker.start()
+                except:
+                    print("erro ao iniciar Theard de atualização de frames")
+            else:
+                ret = 1
+                self.frame = cv2.imread(self.filename)
+            #ret, self.frame = self.video.read()
 
             if self.frame.shape[0] < rect.height() or self.frame.shape[1] < rect.width():
                 self.frameHeight = self.frame.shape[0]
@@ -307,14 +319,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.videoLabel.clear()
 
             self.count = 0
-
-            self.worker.video = self.video
-            self.worker.setPhoto = self.setPhoto
-            
-            try:
-                self.worker.start()
-            except:
-                print("erro ao iniciar Theard de atualização de frames")
 
             self.pushButton_3.setEnabled(True)
             self.pushButton_4.setEnabled(True)
