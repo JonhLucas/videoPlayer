@@ -279,7 +279,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.filename = 'resources/vlc-record-20210410_180547.mp4'
 
         self.filename = QFileDialog.getOpenFileName(filter="Image (*.*)")[0]
-        if self.filename != "":
+        if self.filename != "" and self.filename is not None:
             if self.started:
                 self.started = False
                 self.pushButton_3.setText("Play")
