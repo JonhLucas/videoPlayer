@@ -288,7 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pushButton_3.setText("Pause")
             
             tipo = (self.filename.split('.')[-1])
-            video_ext = ['mp4', 'avi', 'mov', 'mpg', 'mpeg', 'wmv', 'm4v']
+            video_ext = ['mp4', 'avi', 'mov', 'mpg', 'mpeg', 'wmv', 'm4v', 'mkv']
             if tipo in video_ext:
                 self.video = cv2.VideoCapture(self.filename)
                 ret, self.frame = self.video.read()
